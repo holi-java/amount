@@ -12,6 +12,7 @@ trait Boxed {
 impl<T> Boxed for T {}
 
 type DynExpression = Box<dyn Expression>;
+
 #[derive(Debug)]
 enum Error {}
 
@@ -27,7 +28,7 @@ trait Expression: Debug + Display {
     fn reduce(&self, exchanger: &dyn Exchanger, dest: &Unit) -> Result<Amount, Error>;
 }
 
-impl Expression for DynExpression {
+impl<E: Expression> Expression for Box<E> {
     fn add(self: Box<Self>, addend: DynExpression) -> DynExpression {
         (*self).add(addend)
     }
