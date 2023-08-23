@@ -20,14 +20,22 @@ trait Exchanger {
     fn rate(&self, source: &Unit, dest: &Unit) -> Result<u32, Self::Err>;
 }
 
+trait Product {
+    type Output;
+
+    fn times(self, multiplier: u32) -> Self::Output;
+}
+
+trait Reduce {
+    type Output;
+
+    fn reduce<E: Exchanger>(&self, exchanger: &E, dest: &Unit) -> Result<Self::Output, E::Err>;
+}
+
 trait Expression<Rhs = Self> {
     fn add(self, addend: Rhs) -> Sum<Self, Rhs>
     where
         Self: Sized;
-
-    fn times(self, multiplier: u32) -> Self;
-
-    fn reduce<E: Exchanger>(&self, exchanger: &E, dest: &Unit) -> Result<Amount, E::Err>;
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -48,17 +56,33 @@ impl Display for Amount {
     }
 }
 
-impl Expression for Amount {
-    fn add(self, addend: Self) -> Sum<Self, Self> {
-        todo!()
+impl<Rhs> Expression<Rhs> for Amount {
+    fn add(self, addend: Rhs) -> Sum<Self, Rhs>
+    where
+        Self: Sized,
+    {
+        Sum(self, addend)
     }
+}
 
-    fn times(self, multiplier: u32) -> Self {
-        todo!()
+impl Product for Amount {
+    type Output = Self;
+    fn times(self, multiplier: u32) -> Self::Output {
+        Amount::new(self.amount * multiplier, self.unit)
     }
+}
 
-    fn reduce<E: Exchanger>(&self, exchanger: &E, dest: &Unit) -> Result<Amount, E::Err> {
-        todo!()
+impl Reduce for Amount {
+    type Output = Amount;
+
+    fn reduce<E: Exchanger>(&self, exchanger: &E, dest: &Unit) -> Result<Self::Output, E::Err> {
+        if self.unit == *dest {
+            return Ok(self.clone());
+        }
+        Ok(Amount::new(
+            self.amount * exchanger.rate(&self.unit, dest)?,
+            dest.clone(),
+        ))
     }
 }
 
@@ -93,15 +117,38 @@ impl<L, R, Rhs> Expression<Rhs> for Sum<L, R> {
     where
         Self: Sized,
     {
-        todo!()
+        Sum(self, addend)
     }
+}
 
-    fn times(self, multiplier: u32) -> Self {
-        todo!()
+impl<L, R> Reduce for Sum<L, R>
+where
+    L: Reduce<Output = Amount>,
+    R: Reduce<Output = Amount>,
+{
+    type Output = Amount;
+
+    fn reduce<E: Exchanger>(&self, exchanger: &E, dest: &Unit) -> Result<Self::Output, E::Err> {
+        let (lhs, rhs) = (
+            self.0.reduce(exchanger, dest)?,
+            self.1.reduce(exchanger, dest)?,
+        );
+
+        Ok(Amount::new(lhs.amount + rhs.amount, lhs.unit))
     }
+}
 
-    fn reduce<E: Exchanger>(&self, exchanger: &E, dest: &Unit) -> Result<Amount, E::Err> {
-        todo!()
+impl<L, R> Product for Sum<L, R>
+where
+    L: Product<Output = L>,
+    R: Product<Output = R>,
+{
+    type Output = Self;
+    fn times(self, multiplier: u32) -> Self::Output
+    where
+        Self: Sized,
+    {
+        Sum(self.0.times(multiplier), self.1.times(multiplier))
     }
 }
 
@@ -170,11 +217,26 @@ mod tests {
     }
 
     #[test]
+    fn add_sum2() {
+        let one = Amount::new(1, g()).boxed();
+        let two = Amount::new(2, g()).boxed();
+        let five = Amount::new(5, kg()).boxed();
+
+        let sum1 = one.clone().add(five.clone());
+        let sum2 = one.clone().add(two.clone());
+        // compiler error: need type annotation
+        let result = sum1.add(sum2);
+
+        assert_eq!(result.to_string(), "1g + 5kg + 1g + 2g");
+    }
+
+    #[test]
     fn sum_multiplication() {
         let one = Amount::new(1, g()).boxed();
         let five = Amount::new(5, kg()).boxed();
 
-        let result = one.clone().add(five.clone()).times(3);
+        let result = one.clone().add(five.clone());
+        let result = result.times(3);
 
         assert_eq!(result.to_string(), "3g + 15kg");
     }
