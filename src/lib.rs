@@ -1,20 +1,6 @@
 #![feature(trait_alias)]
 use std::fmt::{Debug, Display};
 use std::ops::{Add, Mul};
-trait Boxed {
-    type Output;
-
-    fn boxed(self) -> Self::Output;
-}
-
-impl<T> Boxed for T {
-    type Output = Self;
-
-    fn boxed(self) -> Self::Output {
-        self
-    }
-}
-
 trait Exchanger {
     type Err;
 
@@ -184,8 +170,8 @@ mod tests {
 
     #[test]
     fn sum_to_string() {
-        let one = Amount::new(1, g()).boxed();
-        let five = Amount::new(5, kg()).boxed();
+        let one = Amount::new(1, g());
+        let five = Amount::new(5, kg());
         let sum = one.add(five);
 
         assert_eq!(sum.to_string(), "1g + 5kg");
@@ -193,8 +179,8 @@ mod tests {
 
     #[test]
     fn add_amount_with_same_unit() {
-        let one = Amount::new(1, g()).boxed();
-        let five = Amount::new(5, g()).boxed();
+        let one = Amount::new(1, g());
+        let five = Amount::new(5, g());
 
         let result = one.clone().add(five.clone());
         assert_eq!(result.to_string(), "1g + 5g");
@@ -202,7 +188,7 @@ mod tests {
 
     #[test]
     fn amount_multiplication() {
-        let five = Amount::new(5, g()).boxed();
+        let five = Amount::new(5, g());
 
         let result = five * 3;
 
@@ -211,9 +197,9 @@ mod tests {
 
     #[test]
     fn sum_add_amount() {
-        let one = Amount::new(1, g()).boxed();
-        let two = Amount::new(2, g()).boxed();
-        let five = Amount::new(5, kg()).boxed();
+        let one = Amount::new(1, g());
+        let two = Amount::new(2, g());
+        let five = Amount::new(5, kg());
 
         let result = one.clone().add(five.clone());
         let result = result.add(two.clone());
@@ -223,9 +209,9 @@ mod tests {
 
     #[test]
     fn add_sum2() {
-        let one = Amount::new(1, g()).boxed();
-        let two = Amount::new(2, g()).boxed();
-        let five = Amount::new(5, kg()).boxed();
+        let one = Amount::new(1, g());
+        let two = Amount::new(2, g());
+        let five = Amount::new(5, kg());
 
         let sum1 = one.clone().add(five.clone());
         let sum2 = one.clone().add(two.clone());
@@ -237,8 +223,8 @@ mod tests {
 
     #[test]
     fn sum_multiplication() {
-        let one = Amount::new(1, g()).boxed();
-        let five = Amount::new(5, kg()).boxed();
+        let one = Amount::new(1, g());
+        let five = Amount::new(5, kg());
 
         let result = one.clone().add(five.clone());
         let result = result * 3;
@@ -248,7 +234,7 @@ mod tests {
 
     #[test]
     fn reduce_amount_to_same_unit() {
-        let one = Amount::new(1, g()).boxed();
+        let one = Amount::new(1, g());
 
         let result = one.reduce(&Weight, &g()).unwrap();
         assert_eq!(result, one);
@@ -264,8 +250,8 @@ mod tests {
 
     #[test]
     fn reduce_sum_to_same_unit() {
-        let one = Amount::new(1, g()).boxed();
-        let five = Amount::new(5, g()).boxed();
+        let one = Amount::new(1, g());
+        let five = Amount::new(5, g());
 
         let sum = one.add(five);
 
@@ -275,8 +261,8 @@ mod tests {
 
     #[test]
     fn reduce_sum_to_diff_unit() {
-        let one = Amount::new(1, kg()).boxed();
-        let five = Amount::new(5, g()).boxed();
+        let one = Amount::new(1, kg());
+        let five = Amount::new(5, g());
 
         let sum = one.add(five);
 
