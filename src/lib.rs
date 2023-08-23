@@ -1,5 +1,7 @@
 use std::fmt::{Debug, Display};
+use std::num::ParseIntError;
 use std::ops::{Add, Mul};
+use std::str::FromStr;
 trait Exchanger {
     type Err;
 
@@ -27,6 +29,35 @@ impl Amount {
 impl Display for Amount {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{amount}{unit}", amount = self.amount, unit = self.unit)
+    }
+}
+
+#[derive(Debug)]
+enum Error {
+    Empty,
+    ParseError(ParseIntError),
+}
+
+impl std::error::Error for Error {}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Empty => f.write_str("Empty"),
+            Self::ParseError(err) => Display::fmt(err, f),
+        }
+    }
+}
+
+impl FromStr for Amount {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let i = s.find(|c: char| !c.is_ascii_digit()).ok_or(Error::Empty)?;
+        Ok(Amount::new(
+            s[..i].parse().map_err(Error::ParseError)?,
+            Unit::new(&s[i..]),
+        ))
     }
 }
 
@@ -249,6 +280,13 @@ mod tests {
 
         let result = sum.reduce(&Weight, &g()).unwrap();
         assert_eq!(result, Amount::new(1005, g()));
+    }
+
+    #[test]
+    fn parse_amount_from_string() {
+        assert_eq!(Amount::new(1, g()), "1g".parse().unwrap());
+        assert_eq!(Amount::new(2, g()), "2g".parse().unwrap());
+        assert_eq!(Amount::new(12, g()), "12g".parse().unwrap());
     }
 
     struct Weight;
