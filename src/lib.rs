@@ -1,5 +1,5 @@
-#![allow(unused)]
 use std::fmt::{Debug, Display};
+use std::ops::Add;
 trait Boxed {
     type Output;
 
@@ -32,11 +32,11 @@ trait Reduce {
     fn reduce<E: Exchanger>(&self, exchanger: &E, dest: &Unit) -> Result<Self::Output, E::Err>;
 }
 
-trait Expression<Rhs = Self> {
-    fn add(self, addend: Rhs) -> Sum<Self, Rhs>
-    where
-        Self: Sized;
-}
+// use std::ops::Add instead
+// trait Add<Rhs = Self> {
+//     type Output;
+//     fn add(self, addend: Rhs) -> Self::Output;
+// }
 
 #[derive(Debug, Clone, PartialEq)]
 struct Amount {
@@ -56,11 +56,9 @@ impl Display for Amount {
     }
 }
 
-impl<Rhs> Expression<Rhs> for Amount {
-    fn add(self, addend: Rhs) -> Sum<Self, Rhs>
-    where
-        Self: Sized,
-    {
+impl<Rhs> Add<Rhs> for Amount {
+    type Output = Sum<Self, Rhs>;
+    fn add(self, addend: Rhs) -> Self::Output {
         Sum(self, addend)
     }
 }
@@ -92,6 +90,7 @@ struct Unit {
 }
 
 impl Unit {
+    #[allow(dead_code)]
     fn new<K: Into<String>>(key: K) -> Unit {
         Unit { key: key.into() }
     }
@@ -112,11 +111,10 @@ impl<L: Display, R: Display> Display for Sum<L, R> {
     }
 }
 
-impl<L, R, Rhs> Expression<Rhs> for Sum<L, R> {
-    fn add(self, addend: Rhs) -> Sum<Self, Rhs>
-    where
-        Self: Sized,
-    {
+impl<L, R, Rhs> Add<Rhs> for Sum<L, R> {
+    type Output = Sum<Self, Rhs>;
+
+    fn add(self, addend: Rhs) -> Self::Output {
         Sum(self, addend)
     }
 }
