@@ -1,44 +1,33 @@
+#![allow(unused)]
 use std::fmt::{Debug, Display};
-
 trait Boxed {
-    fn boxed(self) -> Box<Self>
-    where
-        Self: Sized,
-    {
-        Box::new(self)
-    }
+    type Output;
+
+    fn boxed(self) -> Self::Output;
 }
 
-impl<T> Boxed for T {}
+impl<T> Boxed for T {
+    type Output = Self;
 
-type DynExpression = Box<dyn Expression>;
-#[derive(Debug)]
-enum Error {}
+    fn boxed(self) -> Self::Output {
+        self
+    }
+}
 
 trait Exchanger {
-    fn rate(&self, source: &Unit, dest: &Unit) -> Result<u32, Error>;
+    type Err;
+
+    fn rate(&self, source: &Unit, dest: &Unit) -> Result<u32, Self::Err>;
 }
 
-trait Expression: Debug + Display {
-    fn add(self: Box<Self>, addend: DynExpression) -> DynExpression;
+trait Expression<Rhs = Self> {
+    fn add(self, addend: Rhs) -> Sum<Self, Rhs>
+    where
+        Self: Sized;
 
-    fn times(self: Box<Self>, multiplier: u32) -> DynExpression;
+    fn times(self, multiplier: u32) -> Self;
 
-    fn reduce(&self, exchanger: &dyn Exchanger, dest: &Unit) -> Result<Amount, Error>;
-}
-
-impl Expression for DynExpression {
-    fn add(self: Box<Self>, addend: DynExpression) -> DynExpression {
-        (*self).add(addend)
-    }
-
-    fn times(self: Box<Self>, multiplier: u32) -> DynExpression {
-        (*self).times(multiplier)
-    }
-
-    fn reduce(&self, exchanger: &dyn Exchanger, dest: &Unit) -> Result<Amount, Error> {
-        (**self).reduce(exchanger, dest)
-    }
+    fn reduce<E: Exchanger>(&self, exchanger: &E, dest: &Unit) -> Result<Amount, E::Err>;
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -60,20 +49,16 @@ impl Display for Amount {
 }
 
 impl Expression for Amount {
-    fn add(self: Box<Self>, addend: DynExpression) -> DynExpression {
-        Sum(self as DynExpression, addend).boxed()
+    fn add(self, addend: Self) -> Sum<Self, Self> {
+        todo!()
     }
 
-    fn times(self: Box<Self>, multiplier: u32) -> DynExpression {
-        Amount::new(self.amount * multiplier, self.unit).boxed()
+    fn times(self, multiplier: u32) -> Self {
+        todo!()
     }
 
-    fn reduce(&self, exchanger: &dyn Exchanger, dest: &Unit) -> Result<Amount, Error> {
-        if self.unit == *dest {
-            return Ok(self.clone());
-        }
-        let rate = exchanger.rate(&self.unit, dest)?;
-        Ok(Amount::new(self.amount * rate, dest.clone()))
+    fn reduce<E: Exchanger>(&self, exchanger: &E, dest: &Unit) -> Result<Amount, E::Err> {
+        todo!()
     }
 }
 
@@ -103,29 +88,20 @@ impl<L: Display, R: Display> Display for Sum<L, R> {
     }
 }
 
-impl<L, R> Expression for Sum<L, R>
-where
-    L: Expression + 'static,
-    R: Expression + 'static,
-{
-    fn add(self: Box<Self>, addend: DynExpression) -> DynExpression {
-        Sum(self as DynExpression, addend).boxed()
+impl<L, R, Rhs> Expression<Rhs> for Sum<L, R> {
+    fn add(self, addend: Rhs) -> Sum<Self, Rhs>
+    where
+        Self: Sized,
+    {
+        todo!()
     }
 
-    fn times(self: Box<Self>, multiplier: u32) -> DynExpression {
-        Sum(
-            self.0.boxed().times(multiplier),
-            self.1.boxed().times(multiplier),
-        )
-        .boxed()
+    fn times(self, multiplier: u32) -> Self {
+        todo!()
     }
 
-    fn reduce(&self, exchanger: &dyn Exchanger, dest: &Unit) -> Result<Amount, Error> {
-        let (lhs, rhs) = (
-            self.0.reduce(exchanger, dest)?,
-            self.1.reduce(exchanger, dest)?,
-        );
-        Ok(Amount::new(lhs.amount + rhs.amount, dest.clone()))
+    fn reduce<E: Exchanger>(&self, exchanger: &E, dest: &Unit) -> Result<Amount, E::Err> {
+        todo!()
     }
 }
 
@@ -208,7 +184,7 @@ mod tests {
         let one = Amount::new(1, g()).boxed();
 
         let result = one.reduce(&Weight, &g()).unwrap();
-        assert_eq!(result, *one);
+        assert_eq!(result, one);
     }
 
     #[test]
@@ -244,7 +220,9 @@ mod tests {
     struct Weight;
 
     impl Exchanger for Weight {
-        fn rate(&self, source: &Unit, dest: &Unit) -> Result<u32, Error> {
+        type Err = ();
+
+        fn rate(&self, source: &Unit, dest: &Unit) -> Result<u32, ()> {
             match (&*source.key, &*dest.key) {
                 ("kg", "g") => Ok(1000),
                 _ => todo!(),
