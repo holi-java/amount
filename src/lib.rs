@@ -6,24 +6,11 @@ trait Exchanger {
     fn rate(&self, source: &Unit, dest: &Unit) -> Result<u32, Self::Err>;
 }
 
-// use std::ops::Mul instead
-// trait Product {
-//     type Output;
-//
-//     fn times(self, multiplier: u32) -> Self::Output;
-// }
-
 trait Reduce {
     type Output;
 
     fn reduce<E: Exchanger>(&self, exchanger: &E, dest: &Unit) -> Result<Self::Output, E::Err>;
 }
-
-// use std::ops::Add instead
-// trait Add<Rhs = Self> {
-//     type Output;
-//     fn add(self, addend: Rhs) -> Self::Output;
-// }
 
 #[derive(Debug, Clone, PartialEq)]
 struct Amount {
@@ -132,10 +119,7 @@ where
     R: Mul<T, Output = R>,
 {
     type Output = Self;
-    fn mul(self, multiplier: T) -> Self::Output
-    where
-        Self: Sized,
-    {
+    fn mul(self, multiplier: T) -> Self::Output {
         Sum(self.0 * multiplier.clone(), self.1 * multiplier)
     }
 }
@@ -275,7 +259,7 @@ mod tests {
         fn rate(&self, source: &Unit, dest: &Unit) -> Result<u32, ()> {
             match (&*source.key, &*dest.key) {
                 ("kg", "g") => Ok(1000),
-                _ => todo!(),
+                _ => Err(()),
             }
         }
     }
