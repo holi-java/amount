@@ -1,4 +1,3 @@
-#![feature(trait_alias)]
 use std::fmt::{Debug, Display};
 use std::ops::{Add, Mul};
 trait Exchanger {
