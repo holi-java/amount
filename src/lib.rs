@@ -127,12 +127,10 @@ where
     }
 }
 
-impl<T, L, R> Mul<T> for Sum<L, R>
+impl<T: Clone, L, R> Mul<T> for Sum<L, R>
 where
     L: Mul<T, Output = L>,
     R: Mul<T, Output = R>,
-    u32: Mul<T, Output = u32>,
-    T: Clone,
 {
     type Output = Self;
     fn mul(self, multiplier: T) -> Self::Output
