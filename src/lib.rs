@@ -2,26 +2,27 @@ use std::fmt::{Debug, Display};
 use std::num::ParseIntError;
 use std::ops::{Add, Mul};
 use std::str::FromStr;
-trait Exchanger {
+pub trait Exchanger {
+    type Rate: Into<u32>;
     type Err;
 
-    fn rate(&self, source: &Unit, dest: &Unit) -> Result<u32, Self::Err>;
+    fn rate(&self, source: &Unit, dest: &Unit) -> Result<Self::Rate, Self::Err>;
 }
 
-trait Reduce {
+pub trait Reduce {
     type Output;
 
     fn reduce<E: Exchanger>(&self, exchanger: &E, dest: &Unit) -> Result<Self::Output, E::Err>;
 }
 
 #[derive(Debug, Clone, PartialEq)]
-struct Amount {
-    amount: u32,
-    unit: Unit,
+pub struct Amount {
+    pub amount: u32,
+    pub unit: Unit,
 }
 
 impl Amount {
-    fn new(amount: u32, unit: Unit) -> Self {
+    pub fn new(amount: u32, unit: Unit) -> Self {
         Amount { amount, unit }
     }
 }
@@ -33,7 +34,7 @@ impl Display for Amount {
 }
 
 #[derive(Debug)]
-enum Error {
+pub enum Error {
     Empty,
     ParseError(ParseIntError),
 }
@@ -86,20 +87,19 @@ impl Reduce for Amount {
             return Ok(self.clone());
         }
         Ok(Amount::new(
-            self.amount * exchanger.rate(&self.unit, dest)?,
+            self.amount * exchanger.rate(&self.unit, dest)?.into(),
             dest.clone(),
         ))
     }
 }
 
 #[derive(Debug, Clone, PartialEq)]
-struct Unit {
-    key: String,
+pub struct Unit {
+    pub key: String,
 }
 
 impl Unit {
-    #[allow(dead_code)]
-    fn new<K: Into<String>>(key: K) -> Unit {
+    pub fn new<K: Into<String>>(key: K) -> Unit {
         Unit { key: key.into() }
     }
 }
@@ -111,7 +111,7 @@ impl Display for Unit {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-struct Sum<L, R>(L, R);
+pub struct Sum<L, R>(L, R);
 
 impl<L: Display, R: Display> Display for Sum<L, R> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -292,6 +292,7 @@ mod tests {
     struct Weight;
 
     impl Exchanger for Weight {
+        type Rate = u32;
         type Err = ();
 
         fn rate(&self, source: &Unit, dest: &Unit) -> Result<u32, ()> {
