@@ -1,5 +1,6 @@
+#![feature(trait_alias)]
 use std::fmt::{Debug, Display};
-use std::ops::Add;
+use std::ops::{Add, Mul};
 trait Boxed {
     type Output;
 
@@ -20,11 +21,12 @@ trait Exchanger {
     fn rate(&self, source: &Unit, dest: &Unit) -> Result<u32, Self::Err>;
 }
 
-trait Product {
-    type Output;
-
-    fn times(self, multiplier: u32) -> Self::Output;
-}
+// use std::ops::Mul instead
+// trait Product {
+//     type Output;
+//
+//     fn times(self, multiplier: u32) -> Self::Output;
+// }
 
 trait Reduce {
     type Output;
@@ -63,9 +65,12 @@ impl<Rhs> Add<Rhs> for Amount {
     }
 }
 
-impl Product for Amount {
+impl<T> Mul<T> for Amount
+where
+    u32: Mul<T, Output = u32>,
+{
     type Output = Self;
-    fn times(self, multiplier: u32) -> Self::Output {
+    fn mul(self, multiplier: T) -> Self::Output {
         Amount::new(self.amount * multiplier, self.unit)
     }
 }
@@ -136,17 +141,19 @@ where
     }
 }
 
-impl<L, R> Product for Sum<L, R>
+impl<T, L, R> Mul<T> for Sum<L, R>
 where
-    L: Product<Output = L>,
-    R: Product<Output = R>,
+    L: Mul<T, Output = L>,
+    R: Mul<T, Output = R>,
+    u32: Mul<T, Output = u32>,
+    T: Clone,
 {
     type Output = Self;
-    fn times(self, multiplier: u32) -> Self::Output
+    fn mul(self, multiplier: T) -> Self::Output
     where
         Self: Sized,
     {
-        Sum(self.0.times(multiplier), self.1.times(multiplier))
+        Sum(self.0 * multiplier.clone(), self.1 * multiplier)
     }
 }
 
@@ -197,7 +204,7 @@ mod tests {
     fn amount_multiplication() {
         let five = Amount::new(5, g()).boxed();
 
-        let result = five.times(3);
+        let result = five * 3;
 
         assert_eq!(result.to_string(), "15g");
     }
@@ -234,7 +241,7 @@ mod tests {
         let five = Amount::new(5, kg()).boxed();
 
         let result = one.clone().add(five.clone());
-        let result = result.times(3);
+        let result = result * 3;
 
         assert_eq!(result.to_string(), "3g + 15kg");
     }
