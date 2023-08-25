@@ -29,6 +29,8 @@ use std::num::ParseIntError;
 use std::ops::{Add, FromResidual, Mul, Try};
 use std::str::FromStr;
 
+/// Each product has its own [Exchanger] for reduce [Amount] with diff [Unit]s 
+/// into single [Amount] with [base unit](Self::base_unit()).
 pub trait Exchanger {
     type Rate: Into<u32>;
     type Err;
