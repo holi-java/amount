@@ -17,7 +17,7 @@ fn arithmetic() {
 
     let g = Unit::new("g");
 
-    assert_eq!(result.reduce(&Weight, &g), Ok(Amount::new(15006, g)));
+    assert_eq!(result.reduce(&Weight), Ok(Amount::new(15006, g)));
 
     struct Weight;
     impl Exchanger for Weight {
@@ -29,6 +29,10 @@ fn arithmetic() {
                 ("kg", "g") => Ok(1000),
                 _ => Err(()),
             }
+        }
+
+        fn base_unit(&self) -> Unit {
+            Unit::new("g")
         }
     }
 }

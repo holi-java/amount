@@ -10,12 +10,14 @@ pub trait Exchanger {
     type Output: Try<Output = Self::Rate> = Result<Self::Rate, Self::Err>;
 
     fn rate(&self, source: &Unit, dest: &Unit) -> Result<Self::Rate, Self::Err>;
+
+    fn base_unit(&self) -> Unit;
 }
 
 pub trait Reduce {
     type Output;
 
-    fn reduce<E: Exchanger>(&self, exchanger: &E, dest: &Unit) -> Result<Self::Output, E::Err>;
+    fn reduce<E: Exchanger>(&self, exchanger: &E) -> Result<Self::Output, E::Err>;
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -85,12 +87,13 @@ where
 impl Reduce for Amount {
     type Output = Amount;
 
-    fn reduce<E: Exchanger>(&self, exchanger: &E, dest: &Unit) -> Result<Self::Output, E::Err> {
-        if self.unit == *dest {
+    fn reduce<E: Exchanger>(&self, exchanger: &E) -> Result<Self::Output, E::Err> {
+        let dest = exchanger.base_unit();
+        if self.unit == dest {
             return Ok(self.clone());
         }
         Ok(Amount::new(
-            self.amount * exchanger.rate(&self.unit, dest)?.into(),
+            self.amount * exchanger.rate(&self.unit, &dest)?.into(),
             dest.clone(),
         ))
     }
@@ -137,12 +140,8 @@ where
 {
     type Output = Amount;
 
-    fn reduce<E: Exchanger>(&self, exchanger: &E, dest: &Unit) -> Result<Self::Output, E::Err> {
-        let (lhs, rhs) = (
-            self.0.reduce(exchanger, dest)?,
-            self.1.reduce(exchanger, dest)?,
-        );
-
+    fn reduce<E: Exchanger>(&self, exchanger: &E) -> Result<Self::Output, E::Err> {
+        let (lhs, rhs) = (self.0.reduce(exchanger)?, self.1.reduce(exchanger)?);
         Ok(Amount::new(lhs.amount + rhs.amount, lhs.unit))
     }
 }
@@ -251,7 +250,7 @@ mod tests {
     fn reduce_amount_to_same_unit() {
         let one = Amount::new(1, g());
 
-        let result = one.reduce(&Weight, &g()).unwrap();
+        let result = one.reduce(&Weight).unwrap();
         assert_eq!(result, one);
     }
 
@@ -259,7 +258,7 @@ mod tests {
     fn reduce_amount_to_diff_unit() {
         let one = Amount::new(1, kg());
 
-        let result = one.reduce(&Weight, &g()).unwrap();
+        let result = one.reduce(&Weight).unwrap();
         assert_eq!(result, Amount::new(1000, g()));
     }
 
@@ -270,7 +269,7 @@ mod tests {
 
         let sum = one.add(five);
 
-        let result = sum.reduce(&Weight, &g()).unwrap();
+        let result = sum.reduce(&Weight).unwrap();
         assert_eq!(result, Amount::new(6, g()));
     }
 
@@ -281,7 +280,7 @@ mod tests {
 
         let sum = one.add(five);
 
-        let result = sum.reduce(&Weight, &g()).unwrap();
+        let result = sum.reduce(&Weight).unwrap();
         assert_eq!(result, Amount::new(1005, g()));
     }
 
@@ -302,6 +301,10 @@ mod tests {
                 ("kg", "g") => Ok(1000),
                 _ => Err(()),
             }
+        }
+
+        fn base_unit(&self) -> Unit {
+            Unit::new("g")
         }
     }
 }
