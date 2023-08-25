@@ -158,9 +158,13 @@ where
 }
 
 #[cfg(test)]
+mod test;
+
+#[cfg(test)]
 mod tests {
 
     use super::*;
+    use crate::test::Weight;
 
     fn kg() -> Unit {
         Unit::new("kg")
@@ -289,22 +293,5 @@ mod tests {
         assert_eq!(Amount::new(1, g()), "1g".parse().unwrap());
         assert_eq!(Amount::new(2, g()), "2g".parse().unwrap());
         assert_eq!(Amount::new(12, g()), "12g".parse().unwrap());
-    }
-
-    struct Weight;
-
-    impl Exchanger for Weight {
-        type Rate = u32;
-        type Err = ();
-        fn rate(&self, source: &Unit, dest: &Unit) -> Self::Output {
-            match (&*source.key, &*dest.key) {
-                ("kg", "g") => Ok(1000),
-                _ => Err(()),
-            }
-        }
-
-        fn base_unit(&self) -> Unit {
-            Unit::new("g")
-        }
     }
 }
