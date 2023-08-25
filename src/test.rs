@@ -1,13 +1,15 @@
 use super::{Exchanger, Unit};
+
+#[derive(Clone, Copy)]
 pub struct Weight;
 
 impl Exchanger for Weight {
     type Rate = u32;
-    type Err = ();
+    type Err = String;
     fn rate(&self, source: &Unit, dest: &Unit) -> Self::Output {
         match (&*source.key, &*dest.key) {
             ("kg", "g") => Ok(1000),
-            _ => Err(()),
+            _ => Err(format!("can not exchange {} => {}", source.key, dest.key)),
         }
     }
 

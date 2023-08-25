@@ -1,24 +1,98 @@
+#![doc(html_no_source, html_playground_url = "https://play.rust-lang.org/")]
 #![feature(try_trait_v2)]
 #![feature(associated_type_defaults)]
+//!
+//!
+//! # Example
+//!
+//! [Reduce] sum of the two amounts to [Amount] with base [unit](Unit).
+//!
+//! ```rust
+//! # use crate::amount::{Amount, Unit, Exchanger};
+//! # mod test;
+//! # use test::Weight;
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let five = "5kg".parse::<Amount>()?;
+//! let two = "2g".parse::<Amount>()?;
+//!
+//! let sum = five + two;
+//! let result = sum * 3;
+//!
+//! let result = Weight.reduce(result)?;
+//!
+//! assert_eq!(result, Amount::new(15006, Weight.base_unit()));
+//! # Ok(())
+//! # }
+//! ```
 use std::fmt::{Debug, Display};
 use std::num::ParseIntError;
-use std::ops::{Add, Mul, Try};
+use std::ops::{Add, FromResidual, Mul, Try};
 use std::str::FromStr;
+
 pub trait Exchanger {
     type Rate: Into<u32>;
     type Err;
     type Output: Try<Output = Self::Rate> = Result<Self::Rate, Self::Err>;
 
-    fn rate(&self, source: &Unit, dest: &Unit) -> Result<Self::Rate, Self::Err>;
+    fn rate(&self, source: &Unit, dest: &Unit) -> Self::Output;
 
     fn base_unit(&self) -> Unit;
+
+    fn reduce<T>(&self, exp: T) -> Result<Amount, Self::Err>
+    where
+        for<'a> T: Reduce<&'a Self, Output = Amount>,
+        Self: Sized,
+    {
+        exp.reduce(self, &self.base_unit())
+    }
 }
 
-pub trait Reduce {
+macro_rules! impl_exchanger {
+    (&$ty:ty) => {impl_exchanger!(@&);};
+    (&mut $ty:ty) => {impl_exchanger!(@&mut );};
+    (@&$($mut:ident)?) => {
+        impl<E: Exchanger> Exchanger for &$($mut)? E {
+            type Rate = E::Rate;
+
+            type Err = E::Err;
+            type Output = E::Output;
+
+            fn rate(&self, source: &Unit, dest: &Unit) -> Self::Output {
+                (**self).rate(source, dest)
+            }
+
+            fn base_unit(&self) -> Unit {
+                (**self).base_unit()
+            }
+        }
+    };
+}
+
+impl_exchanger!(&T);
+impl_exchanger!(&mut T);
+
+pub trait Reduce<E: Exchanger> {
     type Output;
 
-    fn reduce<E: Exchanger>(&self, exchanger: &E) -> Result<Self::Output, E::Err>;
+    fn reduce(&self, exchanger: E, dest: &Unit) -> Result<Self::Output, E::Err>;
 }
+
+macro_rules! impl_reduce {
+    (&$ty:ty) => {impl_reduce!(@&);};
+    (&mut $ty:ty) => {impl_reduce!(@&mut );};
+    (@&$($mut:ident)?) => {
+        impl<T: Reduce<E>, E: Exchanger> Reduce<E> for &$($mut)? T {
+            type Output = T::Output;
+
+            fn reduce(&self, exchanger: E, dest: &Unit) -> Result<Self::Output, E::Err> {
+                (**self).reduce(exchanger, dest)
+            }
+        }
+    };
+}
+
+impl_reduce!(&T);
+impl_reduce!(&mut T);
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Amount {
@@ -84,16 +158,18 @@ where
     }
 }
 
-impl Reduce for Amount {
+impl<E: Exchanger> Reduce<E> for Amount
+where
+    Result<Amount, <E as Exchanger>::Err>: FromResidual<<E::Output as Try>::Residual>,
+{
     type Output = Amount;
 
-    fn reduce<E: Exchanger>(&self, exchanger: &E) -> Result<Self::Output, E::Err> {
-        let dest = exchanger.base_unit();
-        if self.unit == dest {
+    fn reduce(&self, exchanger: E, dest: &Unit) -> Result<Self::Output, E::Err> {
+        if self.unit == *dest {
             return Ok(self.clone());
         }
         Ok(Amount::new(
-            self.amount * exchanger.rate(&self.unit, &dest)?.into(),
+            self.amount * exchanger.rate(&self.unit, dest)?.into(),
             dest.clone(),
         ))
     }
@@ -116,6 +192,7 @@ impl Display for Unit {
     }
 }
 
+#[doc(hidden)]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Sum<L, R>(L, R);
 
@@ -133,15 +210,19 @@ impl<L, R, Rhs> Add<Rhs> for Sum<L, R> {
     }
 }
 
-impl<L, R> Reduce for Sum<L, R>
+impl<L, R, E> Reduce<E> for Sum<L, R>
 where
-    L: Reduce<Output = Amount>,
-    R: Reduce<Output = Amount>,
+    L: Reduce<E, Output = Amount>,
+    R: Reduce<E, Output = Amount>,
+    E: Exchanger + Clone,
 {
     type Output = Amount;
 
-    fn reduce<E: Exchanger>(&self, exchanger: &E) -> Result<Self::Output, E::Err> {
-        let (lhs, rhs) = (self.0.reduce(exchanger)?, self.1.reduce(exchanger)?);
+    fn reduce(&self, exchanger: E, dest: &Unit) -> Result<Self::Output, E::Err> {
+        let (lhs, rhs) = (
+            self.0.reduce(exchanger.clone(), dest)?,
+            self.1.reduce(exchanger, dest)?,
+        );
         Ok(Amount::new(lhs.amount + rhs.amount, lhs.unit))
     }
 }
@@ -157,8 +238,8 @@ where
     }
 }
 
-#[cfg(test)]
-mod test;
+#[cfg(any(test, doctest))]
+pub mod test;
 
 #[cfg(test)]
 mod tests {
@@ -254,7 +335,7 @@ mod tests {
     fn reduce_amount_to_same_unit() {
         let one = Amount::new(1, g());
 
-        let result = one.reduce(&Weight).unwrap();
+        let result = Weight.reduce(&one).unwrap();
         assert_eq!(result, one);
     }
 
@@ -262,7 +343,7 @@ mod tests {
     fn reduce_amount_to_diff_unit() {
         let one = Amount::new(1, kg());
 
-        let result = one.reduce(&Weight).unwrap();
+        let result = Weight.reduce(one).unwrap();
         assert_eq!(result, Amount::new(1000, g()));
     }
 
@@ -273,7 +354,7 @@ mod tests {
 
         let sum = one.add(five);
 
-        let result = sum.reduce(&Weight).unwrap();
+        let result = Weight.reduce(sum).unwrap();
         assert_eq!(result, Amount::new(6, g()));
     }
 
@@ -284,7 +365,7 @@ mod tests {
 
         let sum = one.add(five);
 
-        let result = sum.reduce(&Weight).unwrap();
+        let result = Weight.reduce(sum).unwrap();
         assert_eq!(result, Amount::new(1005, g()));
     }
 

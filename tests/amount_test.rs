@@ -20,5 +20,5 @@ fn arithmetic() {
 
     let g = Unit::new("g");
 
-    assert_eq!(result.reduce(&Weight), Ok(Amount::new(15006, g)));
+    assert_eq!(Weight.reduce(result), Ok(Amount::new(15006, g)));
 }
