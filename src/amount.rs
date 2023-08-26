@@ -6,7 +6,7 @@ use std::{
 };
 
 pub(crate) type Number = u64;
-use crate::{split::Split, ExchangerExt, Reduce, Sum};
+use crate::{split::Split, ExchangerExt, Reduce, sum::Sum};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Amount {

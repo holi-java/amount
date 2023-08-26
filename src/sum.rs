@@ -4,7 +4,6 @@ use std::{
     ops::{Add, Mul},
 };
 
-#[doc(hidden)]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Sum<L, R>(pub(crate) L, pub(crate) R);
 

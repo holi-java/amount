@@ -5,7 +5,8 @@ mod test;
 use test::CustomWeight;
 
 fn main() -> Result<(), Box<dyn StdError>> {
-    let ext = Weight.extend(CustomWeight);
+    let ext =
+        Box::new(Weight.extend(CustomWeight)) as Box<dyn ExchangerExt<Rate = u64, Err = Error>>;
     println!("Unit Exchange");
     println!("====================");
     ext.sorted_units().iter().for_each(|unit| {

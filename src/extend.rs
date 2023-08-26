@@ -1,10 +1,3 @@
-#![allow(unused)]
-use std::{
-    convert::Infallible,
-    fmt::Display,
-    ops::{FromResidual, Try},
-};
-
 use crate::{traits::Error, Exchanger, ExchangerExt, Number, Unit};
 
 pub struct Extend<B, E> {
@@ -90,11 +83,9 @@ where
 
 #[cfg(test)]
 mod tests {
-    use lazy_static::lazy_static;
-
-    use super::{extend, Error};
-    use crate::{test::*, Amount};
-    use crate::{Exchanger, ExchangerExt, Number, Unit, Weight};
+    use super::extend;
+    use crate::test::*;
+    use crate::{Amount, Exchanger, ExchangerExt, Unit, Weight};
 
     #[test]
     fn compose_two_exchangers_units() {

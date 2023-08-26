@@ -1,4 +1,4 @@
-use crate::{Amount, ExchangerExt, Number, Reduce, Sum};
+use crate::{sum::Sum, Amount, ExchangerExt, Number, Reduce};
 use std::{
     fmt::Display,
     ops::{Add, Mul},
