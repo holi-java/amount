@@ -1,25 +1,22 @@
-use crate::{Exchanger, ExchangerExt, Unit};
+use crate::{
+    traits::{Error, Exchanger, ExchangerExt},
+    Unit,
+};
 
 #[derive(Clone, Copy)]
 pub struct Weight;
 
 impl Exchanger for Weight {
     type Rate = u32;
-    type Err = String;
+    type Err = Error;
     fn rate(&self, unit: &Unit) -> Result<Self::Rate, Self::Err> {
         match &*unit.key {
             "t" => Ok(1_000_000),
             "kg" => Ok(1_000),
             "jin" => Ok(500),
             "g" => Ok(1),
-            _ => Err(format!("can not exchange {}", unit.key)),
+            _ => Err(Error::NotFound(unit.clone())),
         }
-    }
-}
-
-impl ExchangerExt for Weight {
-    fn base_unit(&self) -> Unit {
-        Unit::new("g")
     }
 
     fn sorted_units(&self) -> &[Unit] {
@@ -33,5 +30,11 @@ impl ExchangerExt for Weight {
             ];
         }
         &UNITS[..]
+    }
+}
+
+impl ExchangerExt for Weight {
+    fn base_unit(&self) -> Unit {
+        Unit::new("g")
     }
 }

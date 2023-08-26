@@ -6,7 +6,7 @@ use std::{
 };
 
 pub(crate) type Number = u64;
-use crate::{ExchangerExt, Reduce, Split, Sum};
+use crate::{split::Split, ExchangerExt, Reduce, Sum};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Amount {
@@ -27,14 +27,14 @@ impl Display for Amount {
 }
 
 #[derive(Debug)]
-pub enum Error {
+pub enum ParseError {
     Empty,
     ParseError(ParseIntError),
 }
 
-impl std::error::Error for Error {}
+impl std::error::Error for ParseError {}
 
-impl Display for Error {
+impl Display for ParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Empty => f.write_str("Empty"),
@@ -44,12 +44,14 @@ impl Display for Error {
 }
 
 impl FromStr for Amount {
-    type Err = Error;
+    type Err = ParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let i = s.find(|c: char| !c.is_ascii_digit()).ok_or(Error::Empty)?;
+        let i = s
+            .find(|c: char| !c.is_ascii_digit())
+            .ok_or(ParseError::Empty)?;
         Ok(Amount::new(
-            s[..i].parse().map_err(Error::ParseError)?,
+            s[..i].parse().map_err(ParseError::ParseError)?,
             Unit::new(&s[i..]),
         ))
     }

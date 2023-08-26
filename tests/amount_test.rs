@@ -18,7 +18,7 @@ fn reduce_to_base_unit() {
     let sum = five + two;
     let result = sum * 3;
 
-    assert_eq!(Weight.reduce(result), Ok(Amount::new(15006, g())));
+    assert_eq!(Weight.reduce(result).unwrap(), Amount::new(15006, g()));
 }
 
 #[test]

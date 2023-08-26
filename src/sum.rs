@@ -1,4 +1,4 @@
-use crate::{Amount, Exchanger, Reduce, Split};
+use crate::{split::Split, Amount, Exchanger, Reduce};
 use std::{
     fmt::Display,
     ops::{Add, Mul},

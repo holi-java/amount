@@ -53,15 +53,15 @@ macro_rules! impl_exchanger {
             fn rate(&self, unit: &Unit) -> Result<Self::Rate, Self::Err> {
                 (**self).rate(unit)
             }
+
+            fn sorted_units(&self) -> &[Unit] {
+                (**self).sorted_units()
+            }
         }
 
         impl<E: ExchangerExt> ExchangerExt for &$($mut)? E {
             fn base_unit(&self) -> Unit {
                 (**self).base_unit()
-            }
-
-            fn sorted_units(&self) -> &[Unit] {
-                (**self).sorted_units()
             }
         }
     };
