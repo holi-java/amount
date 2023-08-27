@@ -1,9 +1,9 @@
 use crate::{
     traits::{Error, Exchanger, ExchangerExt},
-    Unit,
+    Unit, UnitRate,
 };
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct Weight;
 
 impl Exchanger for Weight {
@@ -19,14 +19,14 @@ impl Exchanger for Weight {
         }
     }
 
-    fn sorted_units(&self) -> &[Unit] {
+    fn units(&self) -> &[UnitRate<Self::Rate>] {
         use lazy_static::lazy_static;
         lazy_static! {
-            static ref UNITS: [Unit; 4] = [
-                Unit::new("t"),
-                Unit::new("kg"),
-                Unit::new("jin"),
-                Unit::new("g")
+            static ref UNITS: [UnitRate<u32>; 4] = [
+                (Unit::new("t"), 1_000_000),
+                (Unit::new("kg"), 1_000),
+                (Unit::new("jin"), 500),
+                (Unit::new("g"), 1),
             ];
         }
         &UNITS[..]

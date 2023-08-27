@@ -6,7 +6,7 @@ use std::{
 };
 
 pub(crate) type Number = u64;
-use crate::{split::Split, ExchangerExt, Reduce, sum::Sum};
+use crate::{split::Split, sum::Sum, ExchangerExt, Reduce};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Amount {
@@ -65,7 +65,10 @@ impl_mulop!(
     where Number: Mul<T, Output = Number>
 );
 
-impl<E: ExchangerExt> Reduce<E> for Amount {
+impl<E: ExchangerExt> Reduce<E> for Amount
+where
+    E::Rate: Clone,
+{
     type Output = Amount;
 
     fn reduce(&self, exchanger: E) -> Result<Self::Output, E::Err> {

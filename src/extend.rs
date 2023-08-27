@@ -1,9 +1,9 @@
-use crate::{traits::Error, Exchanger, ExchangerExt, Number, Unit};
+use crate::{traits::Error, Exchanger, ExchangerExt, Number, Unit, UnitRate};
 
 pub struct Extend<B, E> {
     ext: E,
     base: B,
-    units: Vec<Unit>,
+    units: Vec<UnitRate<Number>>,
 }
 
 pub(crate) fn extend<B, E>(base: B, ext: E) -> Extend<B, E>
@@ -15,26 +15,23 @@ where
     Number: From<E::Rate>,
     Number: From<B::Rate>,
 {
-    fn sorted_unit_rates_of<T: Exchanger>(exp: &T) -> impl Iterator<Item = (Unit, Number)> + '_
-    where
-        Number: From<T::Rate>,
-    {
-        exp.sorted_units().iter().map(|unit| {
-            (
-                unit.clone(),
-                exp.rate(unit)
-                    .map_err(|_| ())
-                    .expect("violate Exchanger contract")
-                    .into(),
-            )
-        })
-    }
     Extend {
         units: {
-            let mut units = sorted_unit_rates_of(&ext).collect::<Vec<_>>();
-            units.extend(sorted_unit_rates_of(&base));
-            units.sort_by_key(|&(_, rate)| rate);
-            units.into_iter().rev().map(|(unit, _)| unit).collect()
+            #[inline]
+            #[cold]
+            fn cloned_units<E>(e: &E) -> impl Iterator<Item = UnitRate<Number>> + '_
+            where
+                E: Exchanger,
+            {
+                e.units()
+                    .iter()
+                    .cloned()
+                    .map(|(unit, rate)| (unit, rate.into()))
+            }
+
+            let mut units: Vec<_> = cloned_units(&ext).chain(cloned_units(&base)).collect();
+            units.sort_by(|(_, a), (_, b)| a.cmp(b).reverse());
+            units
         },
         ext,
         base,
@@ -61,7 +58,7 @@ where
         }
     }
 
-    fn sorted_units(&self) -> &[Unit] {
+    fn units(&self) -> &[UnitRate<Self::Rate>] {
         &self.units
     }
 }
@@ -91,7 +88,10 @@ mod tests {
     fn compose_two_exchangers_units() {
         let ext = extend(Weight, CustomWeight);
         assert_eq!(
-            ext.sorted_units(),
+            ext.units()
+                .iter()
+                .map(|(unit, _)| unit.clone())
+                .collect::<Vec<_>>(),
             [
                 Unit::new("t"),
                 Unit::new("bag"),

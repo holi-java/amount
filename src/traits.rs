@@ -1,13 +1,16 @@
 use std::fmt::Display;
 
 use crate::{extend::Extend, split::Split, Amount, Number, Unit};
+
+pub(crate) type UnitRate<T> = (Unit, T);
+
 pub trait Exchanger {
-    type Rate: Into<Number>;
+    type Rate: Into<Number> + Ord + Clone;
     type Err;
 
     fn rate(&self, unit: &Unit) -> Result<Self::Rate, Self::Err>;
 
-    fn sorted_units(&self) -> &[Unit];
+    fn units(&self) -> &[UnitRate<Self::Rate>];
 }
 
 /// Each product has its own [Exchanger] for reduce [Amount] with diff [Unit]s
@@ -34,8 +37,8 @@ pub trait ExchangerExt: Exchanger {
         } = self.reduce(exp)?;
 
         let mut pieces = vec![];
-        for current in self.sorted_units() {
-            let rate: Number = self.rate(current)?.into();
+        for (current, rate) in self.units() {
+            let rate: Number = rate.clone().into();
             if remaining >= rate {
                 pieces.push(Amount::new(remaining / rate, current.clone()));
                 remaining %= rate;

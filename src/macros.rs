@@ -74,34 +74,6 @@ macro_rules! parse_generic_types {
         $macro!( (<$T>, $ty<$T>) );
         parse_generic_types!($macro!( $($($tt)*)? ));
     };
-    ((<$T:ident>, $ty:ty)) => {
-        impl<$T : Exchanger + ?Sized> Exchanger for $ty {
-            type Rate = $T::Rate;
-            type Err = $T::Err;
-
-            fn rate(&self, unit: &Unit) -> Result<Self::Rate, Self::Err> {
-                (**self).rate(unit)
-            }
-
-            fn sorted_units(&self) -> &[Unit] {
-                (**self).sorted_units()
-            }
-        }
-
-        impl<$T: ExchangerExt + ?Sized> ExchangerExt for $ty {
-            fn base_unit(&self) -> Unit {
-                (**self).base_unit()
-            }
-        }
-
-        impl<$T: Reduce<E> + ?Sized, E: ExchangerExt> Reduce<E> for $ty {
-            type Output = $T::Output;
-
-            fn reduce(&self, exchanger: E) -> Result<Self::Output, E::Err> {
-                (**self).reduce(exchanger)
-            }
-        }
-    };
 }
 
 macro_rules! impl_all_traits {
@@ -114,8 +86,8 @@ macro_rules! impl_all_traits {
                 (**self).rate(unit)
             }
 
-            fn sorted_units(&self) -> &[Unit] {
-                (**self).sorted_units()
+            fn units(&self) -> &[$crate::traits::UnitRate<Self::Rate>] {
+                (**self).units()
             }
         }
 

@@ -7,9 +7,9 @@ use test::CustomWeight;
 fn main() -> Result<(), Box<dyn StdError>> {
     let ext =
         Box::new(Weight.extend(CustomWeight)) as Box<dyn ExchangerExt<Rate = u64, Err = Error>>;
-    println!("Unit Exchange");
+    println!("Unit Rates");
     println!("====================");
-    ext.sorted_units().iter().for_each(|unit| {
+    ext.units().iter().for_each(|(unit, _)| {
         let current = Amount::new(1, unit.clone());
         let base = ext.reduce(&current).unwrap();
         println!("{current} => {base}");
@@ -20,7 +20,7 @@ fn main() -> Result<(), Box<dyn StdError>> {
     println!("Exchange");
     println!("====================");
     println!("amount = {amount}");
-    println!("base = {}", ext.reduce(&amount)?);
-    println!("human = {}", ext.split(&amount)?);
+    println!("base amount = {}", ext.reduce(&amount)?);
+    println!("human readable amount = {}", ext.split(&amount)?);
     Ok(())
 }

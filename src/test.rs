@@ -22,6 +22,8 @@ pub fn bag() -> Unit {
     Unit::new("bag")
 }
 
+type UnitRate = (Unit, u32);
+
 pub struct CustomWeight;
 impl Exchanger for CustomWeight {
     type Rate = u32;
@@ -35,10 +37,10 @@ impl Exchanger for CustomWeight {
         }
     }
 
-    fn sorted_units(&self) -> &[Unit] {
+    fn units(&self) -> &[UnitRate] {
         use lazy_static::lazy_static;
         lazy_static! {
-            static ref UNITS: [Unit; 1] = [Unit::new("bag")];
+            static ref UNITS: [UnitRate; 1] = [(Unit::new("bag"), 45_000)];
         }
         &UNITS[..]
     }
