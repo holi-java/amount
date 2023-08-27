@@ -57,14 +57,13 @@ pub trait ExchangerExt: Exchanger {
     }
 }
 
-
 pub trait Reduce<E: Exchanger> {
     type Output;
 
     fn reduce(&self, exchanger: E) -> Result<Self::Output, E::Err>;
 }
 
-impl_all_traits!(&T => T, &mut T => T, Box<T> => T);
+parse_generic_types!(impl_all_traits!(&T, &mut T, Box<T>));
 
 #[derive(Debug)]
 pub enum Error {
@@ -88,7 +87,6 @@ impl From<String> for Error {
         Error::Message(value)
     }
 }
-
 
 #[cfg(test)]
 mod tests {

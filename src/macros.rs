@@ -43,14 +43,14 @@ macro_rules! impl_addop {
 }
 
 macro_rules! impl_mulop {
-    (impl <$($g:ident$(:$t:path)?),+> $trait:ty => $target:ty |$self:ident, $arg: ident|$block:block $($tt:tt)*) => {
-        impl <$($g $(: $t)?),+> $trait for $target $($tt)* {
+    (impl <$($T:ident$(:$t:path)?),+> $trait:ty => $target:ty |$self:ident, $arg: ident|$block:block $($tt:tt)*) => {
+        impl <$($T $(: $t)?),+> $trait for $target $($tt)* {
             type Output = $target;
             fn mul(#[allow(unused_mut)] mut $self, $arg: T) -> Self::Output  $block
         }
 
 
-        impl <$($g $(: $t)?),+> $trait for &$target $($tt)* {
+        impl <$($T $(: $t)?),+> $trait for &$target $($tt)* {
             type Output = $target;
             fn mul(self, multiplier: T) -> Self::Output {
                 self.clone() * multiplier
@@ -60,20 +60,24 @@ macro_rules! impl_mulop {
     };
 }
 
-macro_rules! impl_all_traits {
-    (& $g:ident) => {
-        impl_exchanger_ext!(@ $g : &$g);
+macro_rules! parse_generic_types {
+    ($macro:ident!()) => {};
+    ($macro:ident!( &$T:ident $(,$($tt: tt)*)? )) => {
+        $macro!( (<$T>, &$T) );
+        parse_generic_types!($macro!( $($($tt)*)? ));
     };
-    (&mut $g:ident) => {
-        impl_exchanger_ext!(@ $g : &mut $g);
+    ($macro:ident!( &mut $T:ident $(,$($tt: tt)*)? )) => {
+        $macro!( (<$T>, &mut $T) );
+        parse_generic_types!($macro!( $($($tt)*)? ));
     };
-    ($ty:ident <$generic:ident>) => {
-        impl_exchanger_ext!(@ $generic : $ty<$generic>);
+    ($macro:ident!( $ty:ident<$T:ident> $(,$($tt: tt)*)? )) => {
+        $macro!( (<$T>, $ty<$T>) );
+        parse_generic_types!($macro!( $($($tt)*)? ));
     };
-    (@ $g:ident : $ty:ty) => {
-        impl<$g : Exchanger + ?Sized> Exchanger for $ty {
-            type Rate = $g::Rate;
-            type Err = $g::Err;
+    ((<$T:ident>, $ty:ty)) => {
+        impl<$T : Exchanger + ?Sized> Exchanger for $ty {
+            type Rate = $T::Rate;
+            type Err = $T::Err;
 
             fn rate(&self, unit: &Unit) -> Result<Self::Rate, Self::Err> {
                 (**self).rate(unit)
@@ -84,22 +88,49 @@ macro_rules! impl_all_traits {
             }
         }
 
-        impl<$g: ExchangerExt + ?Sized> ExchangerExt for $ty {
+        impl<$T: ExchangerExt + ?Sized> ExchangerExt for $ty {
             fn base_unit(&self) -> Unit {
                 (**self).base_unit()
             }
         }
 
-        impl<$g: Reduce<E> + ?Sized, E: ExchangerExt> Reduce<E> for $ty {
-            type Output = $g::Output;
+        impl<$T: Reduce<E> + ?Sized, E: ExchangerExt> Reduce<E> for $ty {
+            type Output = $T::Output;
 
             fn reduce(&self, exchanger: E) -> Result<Self::Output, E::Err> {
                 (**self).reduce(exchanger)
             }
         }
     };
-    ($($ty: ty => $g:ident),*) => {
-        $(impl_all_traits!(@ $g : $ty);)*
-    };
 }
 
+macro_rules! impl_all_traits {
+    ((<$T:ident>, $ty:ty)) => {
+        impl<$T: Exchanger + ?Sized> Exchanger for $ty {
+            type Rate = $T::Rate;
+            type Err = $T::Err;
+
+            fn rate(&self, unit: &Unit) -> Result<Self::Rate, Self::Err> {
+                (**self).rate(unit)
+            }
+
+            fn sorted_units(&self) -> &[Unit] {
+                (**self).sorted_units()
+            }
+        }
+
+        impl<$T: ExchangerExt + ?Sized> ExchangerExt for $ty {
+            fn base_unit(&self) -> Unit {
+                (**self).base_unit()
+            }
+        }
+
+        impl<$T: Reduce<E> + ?Sized, E: ExchangerExt> Reduce<E> for $ty {
+            type Output = $T::Output;
+
+            fn reduce(&self, exchanger: E) -> Result<Self::Output, E::Err> {
+                (**self).reduce(exchanger)
+            }
+        }
+    };
+}
