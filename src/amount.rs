@@ -59,10 +59,11 @@ impl FromStr for Amount {
 
 impl_addop!(Amount => Split, Amount => Amount, Amount => Sum<L, R>);
 impl_mulop!(
-    impl<T> Mul<T> => Amount |self, multiplier| {
-        Amount::new(self.amount * multiplier, self.unit)
+    <T> Mul<T> => Amount: [Number: Mul<T, Output = Number>] {
+        (self, multiplier) -> {
+            Amount::new(self.amount * multiplier, self.unit)
+        }
     }
-    where Number: Mul<T, Output = Number>
 );
 
 impl<E: ExchangerExt> Reduce<E> for Amount

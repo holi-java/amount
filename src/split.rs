@@ -56,11 +56,12 @@ impl<E: ExchangerExt> Reduce<E> for Split {
 
 impl_addop!(Split => Split, Split => Amount, Split => Sum<L, R>);
 impl_mulop!(
-    impl<T> Mul<T> => Split |self, multiplier| {
-        for amount in self.pieces.iter_mut() {
-            *amount = (&*amount).mul(multiplier.clone());
+    <T> Mul<T> => Split: [T: Clone, Number: Mul<T, Output = Number>,] {
+        (self, multiplier) ->  {
+            for amount in self.pieces.iter_mut() {
+                *amount = (&*amount).mul(multiplier.clone());
+            }
+            self
         }
-        self
     }
-    where T: Clone, Number: Mul<T, Output = Number>,
 );

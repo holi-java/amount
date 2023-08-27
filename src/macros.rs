@@ -43,15 +43,14 @@ macro_rules! impl_addop {
 }
 
 macro_rules! impl_mulop {
-    (impl <$($T:ident$(:$t:path)?),+> $trait:ty => $target:ty |$self:ident, $arg: ident|$block:block $($tt:tt)*) => {
-        impl <$($T $(: $t)?),+> $trait for $target $($tt)* {
-            type Output = $target;
+    (<$($T:ident$(:$t:path)?),+> $trait:ty => $ty:ty: [$($constraints:tt)*] { ($self:ident, $arg: ident) -> $block:block }) => {
+        impl <$($T $(: $t)?),+> $trait for $ty where $($constraints)* {
+            type Output = $ty;
             fn mul(#[allow(unused_mut)] mut $self, $arg: T) -> Self::Output  $block
         }
 
-
-        impl <$($T $(: $t)?),+> $trait for &$target $($tt)* {
-            type Output = $target;
+        impl <$($T $(: $t)?),+> $trait for &$ty where $($constraints)* {
+            type Output = $ty;
             fn mul(self, multiplier: T) -> Self::Output {
                 self.clone() * multiplier
             }

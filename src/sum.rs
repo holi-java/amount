@@ -15,10 +15,11 @@ impl<L: Display, R: Display> Display for Sum<L, R> {
 
 impl_addop!(Sum<L, R> => Split, Sum<L, R> => Amount, Sum<L, R> => Sum<Q, P>);
 impl_mulop!(
-    impl<T: Clone, L, R> Mul<T> => Sum<L, R> |self, multiplier| {
-            Sum(self.0 * multiplier.clone(), self.1 * multiplier)
+    <T, L, R> Mul<T> => Sum<L, R> : [T: Clone, L: Mul<T, Output = L> + Clone, R: Mul<T, Output = R> + Clone] {
+        (self, multiplier) -> {
+                Sum(self.0 * multiplier.clone(), self.1 * multiplier)
+        }
     }
-    where L: Mul<T, Output = L> + Clone, R: Mul<T, Output = R> + Clone,
 );
 
 impl<L, R, E> Reduce<E> for Sum<L, R>
