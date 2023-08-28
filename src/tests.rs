@@ -94,7 +94,7 @@ fn sum_multiplication() {
 fn reduce_amount_to_same_unit() {
     let one = Amount::new(1, g());
 
-    let result = Weight.reduce(&one).unwrap();
+    let result = Weight::default().reduce(&one).unwrap();
     assert_eq!(result, one);
 }
 
@@ -102,7 +102,7 @@ fn reduce_amount_to_same_unit() {
 fn reduce_amount_to_diff_unit() {
     let one = Amount::new(1, kg());
 
-    let result = Weight.reduce(one).unwrap();
+    let result = Weight::default().reduce(one).unwrap();
     assert_eq!(result, Amount::new(1000, g()));
 }
 
@@ -113,7 +113,7 @@ fn reduce_sum_to_same_unit() {
 
     let sum = one.add(five);
 
-    let result = Weight.reduce(sum).unwrap();
+    let result = Weight::default().reduce(sum).unwrap();
     assert_eq!(result, Amount::new(6, g()));
 }
 
@@ -124,7 +124,7 @@ fn reduce_sum_to_diff_unit() {
 
     let sum = one.add(five);
 
-    let result = Weight.reduce(sum).unwrap();
+    let result = Weight::default().reduce(sum).unwrap();
     assert_eq!(result, Amount::new(1005, g()));
 }
 

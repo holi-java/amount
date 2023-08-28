@@ -6,7 +6,7 @@ use std::{
 };
 
 pub(crate) type Number = u64;
-use crate::{split::Split, sum::Sum, ExchangerExt, Reduce};
+use crate::{split::Split, sum::Sum, Exchanger, Reduce};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Amount {
@@ -66,7 +66,7 @@ impl_mulop!(
     }
 );
 
-impl<E: ExchangerExt> Reduce<E> for Amount
+impl<E: Exchanger> Reduce<E> for Amount
 where
     E::Rate: Clone,
 {
@@ -76,7 +76,7 @@ where
         Ok(Amount::new(
             // TODO: overflow
             self.amount * exchanger.rate(&self.unit)?.into(),
-            exchanger.base_unit(),
+            exchanger.base_unit().clone(),
         ))
     }
 }
@@ -95,6 +95,18 @@ impl Unit {
 impl Display for Unit {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&self.key)
+    }
+}
+
+impl<T: Into<String>> From<T> for Unit {
+    fn from(unit: T) -> Self {
+        Self::new(unit)
+    }
+}
+
+impl From<&Unit> for Unit {
+    fn from(unit: &Unit) -> Self {
+        unit.clone()
     }
 }
 

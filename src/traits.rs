@@ -1,9 +1,11 @@
 use std::fmt::Display;
 
-use crate::{extend::Extend, split::Split, Amount, Number, Unit};
+use crate::{table::Table, split::Split, Amount, Number, Unit};
 
 pub(crate) type UnitRate<T> = (Unit, T);
 
+/// Each product has its own [Exchanger] for reduce [Amount] with diff [Unit]s
+/// into single [Amount] with [base unit](Exchanger::base_unit()).
 pub trait Exchanger {
     type Rate: Into<Number> + Ord + Clone;
     type Err;
@@ -11,13 +13,11 @@ pub trait Exchanger {
     fn rate(&self, unit: &Unit) -> Result<Self::Rate, Self::Err>;
 
     fn units(&self) -> &[UnitRate<Self::Rate>];
+
+    fn base_unit(&self) -> &Unit;
 }
 
-/// Each product has its own [Exchanger] for reduce [Amount] with diff [Unit]s
-/// into single [Amount] with [base unit](Self::base_unit()).
 pub trait ExchangerExt: Exchanger {
-    fn base_unit(&self) -> Unit;
-
     fn reduce<T>(&self, exp: T) -> Result<Amount, Self::Err>
     where
         for<'a> T: Reduce<&'a Self, Output = Amount>,
@@ -47,7 +47,7 @@ pub trait ExchangerExt: Exchanger {
         Ok(Split { pieces })
     }
 
-    fn extend<E>(self, ext: E) -> Extend<Self, E>
+    fn extend<E>(self, ext: E) -> Result<Table, Error>
     where
         E: Exchanger,
         Number: From<Self::Rate>,
@@ -56,9 +56,11 @@ pub trait ExchangerExt: Exchanger {
         Error: From<Self::Err>,
         Self: Sized,
     {
-        crate::extend::extend::<Self, E>(self, ext)
+        crate::table::merge::<Self, E>(self, ext)
     }
 }
+
+impl<T: Exchanger> ExchangerExt for T {}
 
 pub trait Reduce<E: Exchanger> {
     type Output;
@@ -101,7 +103,7 @@ mod tests {
 
     #[test]
     fn extend_exchanger() {
-        let ext = Weight.extend(CustomWeight);
+        let ext = Weight::default().extend(CustomWeight::default()).unwrap();
 
         assert_eq!(ext.rate(&kg()).unwrap(), 1_000);
         assert_eq!(ext.rate(&bag()).unwrap(), 45_000);

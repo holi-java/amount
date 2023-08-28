@@ -18,14 +18,17 @@ fn reduce_to_base_unit() {
     let sum = five + two;
     let result = sum * 3;
 
-    assert_eq!(Weight.reduce(result).unwrap(), Amount::new(15006, g()));
+    assert_eq!(
+        Weight::default().reduce(result).unwrap(),
+        Amount::new(15006, g())
+    );
 }
 
 #[test]
 fn split_amount_with_base_unit() {
     let g_2200 = "2200g".parse::<Amount>().unwrap();
 
-    let result = Weight.split(g_2200).unwrap();
+    let result = Weight::default().split(g_2200).unwrap();
 
     assert_eq!(result.to_string(), "2kg + 200g");
 }
@@ -34,7 +37,7 @@ fn split_amount_with_base_unit() {
 fn split_amount() {
     let g_2200 = "1kg".parse::<Amount>().unwrap();
 
-    let result = Weight.split(g_2200).unwrap();
+    let result = Weight::default().split(g_2200).unwrap();
 
     assert_eq!(result.to_string(), "1kg");
 }
@@ -43,16 +46,16 @@ fn split_amount() {
 fn reduce_split() {
     let g_2200 = "2200g".parse::<Amount>().unwrap();
 
-    let result = Weight.split(&g_2200).unwrap();
+    let result = Weight::default().split(&g_2200).unwrap();
 
-    assert_eq!(Weight.reduce(result).unwrap(), g_2200);
+    assert_eq!(Weight::default().reduce(result).unwrap(), g_2200);
 }
 
 #[test]
 fn split_multiplication() {
     let g_2300 = "2300g".parse::<Amount>().unwrap();
 
-    let result = Weight.split(g_2300).unwrap();
+    let result = Weight::default().split(g_2300).unwrap();
 
     let result = result * 3;
     assert_eq!(result.to_string(), "6kg + 900g");
@@ -64,7 +67,7 @@ fn split_multiplication() {
 fn split_add() {
     let g_2300 = "2300g".parse::<Amount>().unwrap();
 
-    let split = Weight.split(&g_2300).unwrap();
+    let split = Weight::default().split(&g_2300).unwrap();
 
     let sum = &split + &split;
     assert_eq!(sum.to_string(), "2kg + 300g + 2kg + 300g");
@@ -81,7 +84,7 @@ fn split_add() {
 fn split_into_iter() {
     let g_2300 = "2300g".parse::<Amount>().unwrap();
 
-    let split = Weight.split(g_2300).unwrap();
+    let split = Weight::default().split(g_2300).unwrap();
 
     assert_eq!(
         split.into_iter().collect::<Vec<_>>(),
@@ -93,7 +96,7 @@ fn split_into_iter() {
 fn split_as_iter() {
     let g_2300 = "2300g".parse::<Amount>().unwrap();
 
-    let split = Weight.split(g_2300).unwrap();
+    let split = Weight::default().split(g_2300).unwrap();
 
     assert_eq!(
         split.iter().collect::<Vec<_>>(),

@@ -1,4 +1,4 @@
-use crate::{sum::Sum, Amount, ExchangerExt, Number, Reduce};
+use crate::{sum::Sum, Amount, Exchanger, Number, Reduce};
 use std::{
     fmt::Display,
     ops::{Add, Mul},
@@ -40,7 +40,7 @@ impl IntoIterator for Split {
     }
 }
 
-impl<E: ExchangerExt> Reduce<E> for Split {
+impl<E: Exchanger> Reduce<E> for Split {
     type Output = Amount;
 
     fn reduce(&self, exchanger: E) -> Result<Self::Output, E::Err> {
