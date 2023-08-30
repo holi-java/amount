@@ -47,10 +47,10 @@ where
 {
     let merge = ext.base_unit();
     let units = scaled(
-        ext.units().iter().filter(|(unit, _)| unit != merge),
+        ext.sorted_units().iter().filter(|(unit, _)| unit != merge),
         base.rate(merge).map(Number::from)?,
     );
-    let units = units.chain(scaled(base.units(), 1));
+    let units = units.chain(scaled(base.sorted_units(), 1));
     return Ok(Table::new(base.base_unit(), units));
 
     #[inline]
@@ -81,7 +81,7 @@ impl Exchanger for Table {
         Err(Error::NotFound(unit.clone()))
     }
 
-    fn units(&self) -> &[UnitRate<Self::Rate>] {
+    fn sorted_units(&self) -> &[UnitRate<Self::Rate>] {
         &self.units
     }
 
@@ -100,7 +100,7 @@ mod tests {
     fn compose_two_exchangers_units() {
         let ext = merge(Weight::default(), CustomWeight::default()).unwrap();
         assert_eq!(
-            ext.units()
+            ext.sorted_units()
                 .iter()
                 .map(|(unit, _)| unit.clone())
                 .collect::<Vec<_>>(),
@@ -151,7 +151,7 @@ mod tests {
         let ext = merge(Weight::base("jin").unwrap(), CustomWeight::default()).unwrap();
 
         assert_eq!(
-            ext.units(),
+            ext.sorted_units(),
             [
                 (Unit::new("box"), 4_000),
                 (Unit::new("t"), 2_000),
@@ -173,7 +173,7 @@ mod tests {
 
         assert_eq!(
             table
-                .units()
+                .sorted_units()
                 .iter()
                 .map(|(unit, _)| unit.key.clone())
                 .collect::<Vec<_>>(),
@@ -187,7 +187,7 @@ mod tests {
         let table = Table::new("g", [(Unit::new("kg"), 1000_u64)]);
 
         assert_eq!(
-            table.units().to_vec(),
+            table.sorted_units().to_vec(),
             [(Unit::new("kg"), 1_000), (Unit::new("g"), 1),]
         );
         assert_eq!(table.base_unit().key, "g");

@@ -16,7 +16,7 @@ fn main() -> Result<(), Box<dyn StdError>> {
 
         println!("Unit Rates: {base}");
         println!("====================");
-        ext.units().iter().for_each(|(unit, _)| {
+        ext.sorted_units().iter().for_each(|(unit, _)| {
             let current = Amount::new(1, unit.clone());
             let base = ext.reduce(&current).unwrap();
             println!("{current} => {base}");

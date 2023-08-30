@@ -40,7 +40,7 @@ mod tests {
         .unwrap();
 
         assert_eq!(
-            weight.units().to_vec(),
+            weight.sorted_units().to_vec(),
             [
                 (Unit::new("t"), 1_000_000),
                 (Unit::new("box"), 100_000),
@@ -61,7 +61,7 @@ mod tests {
         .unwrap();
 
         assert_eq!(
-            weight.units().to_vec(),
+            weight.sorted_units().to_vec(),
             [
                 (Unit::new("t"), 1_000),
                 (Unit::new("box"), 100),
@@ -80,7 +80,7 @@ mod tests {
         .unwrap();
 
         assert_eq!(
-            weight.units().to_vec(),
+            weight.sorted_units().to_vec(),
             [
                 (Unit::new("car"), 500),
                 (Unit::new("box"), 20),

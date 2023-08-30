@@ -12,7 +12,7 @@ fn main() -> Result<(), Error> {
     println!("Potato Units");
     println!("====================");
     weight
-        .units()
+        .sorted_units()
         .iter()
         .for_each(|(unit, rate)| println!("{unit} => {rate}"));
 

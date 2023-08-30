@@ -12,7 +12,7 @@ pub trait Exchanger {
 
     fn rate(&self, unit: &Unit) -> Result<Self::Rate, Self::Err>;
 
-    fn units(&self) -> &[UnitRate<Self::Rate>];
+    fn sorted_units(&self) -> &[UnitRate<Self::Rate>];
 
     fn base_unit(&self) -> &Unit;
 }
@@ -37,7 +37,7 @@ pub trait ExchangerExt: Exchanger {
         } = self.reduce(exp)?;
 
         let mut pieces = vec![];
-        for (current, rate) in self.units() {
+        for (current, rate) in self.sorted_units() {
             let rate: Number = rate.clone().into();
             if remaining >= rate {
                 pieces.push(Amount::new(remaining / rate, current.clone()));

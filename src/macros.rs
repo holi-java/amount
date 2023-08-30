@@ -85,8 +85,8 @@ macro_rules! impl_all_traits {
                 (**self).rate(unit)
             }
 
-            fn units(&self) -> &[$crate::traits::UnitRate<Self::Rate>] {
-                (**self).units()
+            fn sorted_units(&self) -> &[$crate::traits::UnitRate<Self::Rate>] {
+                (**self).sorted_units()
             }
 
             fn base_unit(&self) -> &Unit {
@@ -184,8 +184,8 @@ macro_rules! define_exchanger {
 
             #[inline]
             #[cold]
-            fn units(&self) -> &[($crate::Unit, Self::Rate)] {
-                self.table.units()
+            fn sorted_units(&self) -> &[($crate::Unit, Self::Rate)] {
+                self.table.sorted_units()
             }
 
             #[inline]
@@ -227,7 +227,7 @@ mod tests {
         {
             let exchanger = &weight as &dyn Exchanger<Rate = u64, Err = Error>;
             assert_eq!(
-                exchanger.units(),
+                exchanger.sorted_units(),
                 [
                     (Unit::new("T"), 1_000_000_000),
                     (Unit::new("KG"), 1_000_000),
@@ -251,7 +251,7 @@ mod tests {
     fn weight_with_specified_base_unit() {
         let weight = Weight::base("JIN").unwrap();
         assert_eq!(
-            weight.units(),
+            weight.sorted_units(),
             [
                 (Unit::new("T"), 2000),
                 (Unit::new("KG"), 2),
@@ -287,7 +287,7 @@ mod tests {
         }
         let weight = Weight::default();
 
-        assert_eq!(weight.units().to_vec(), [(kg(), 1_000), (g(), 1)]);
+        assert_eq!(weight.sorted_units().to_vec(), [(kg(), 1_000), (g(), 1)]);
         assert_eq!(Weight::units().collect::<Vec<_>>(), ["kg", "g"]);
     }
 
