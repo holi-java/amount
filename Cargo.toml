@@ -9,3 +9,5 @@ edition = "2021"
 [dependencies]
 lazy_static = "1.4.0"
 
+[package.metadata.docs.rs]
+cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]

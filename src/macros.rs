@@ -113,35 +113,50 @@ macro_rules! count {
     };
 }
 
+/// ```rust
+/// # use crate::amount::define_exchanger;
+/// define_exchanger!{
+///     #[base_unit="g"]
+///     #[derive(Debug, Clone)]
+///     pub Weight {
+///         t = 1_000_000,
+///         kg = 1_000,
+///         jin = 500
+///     }
+/// }
+/// ```
 #[macro_export]
 macro_rules! define_exchanger {
     (#[base_unit=$base:literal] $(#[$meta:meta])* $vis:vis $ty: ident { $($fields: ident = $rates: literal),* }) => {
         $(#[$meta])*
         $vis struct $ty {
-            units: Vec<($crate::Unit, u64)>
+            table: $crate::Table
         }
 
         impl $ty {
-            const N: usize = $crate::count!($($rates)*) + 1;
-            const RATES: [u64; Self::N] = [$($rates,)* 1];
-            const UNITS: [&'static str; Self::N] = [$(stringify!($fields),)* $base];
+            const UNIT_RATES: [(&'static str, u64); $crate::count!($($rates)*) + 1] =
+                [$((stringify!($fields), $rates),)* ($base, 1)];
 
             #[inline]
             #[cold]
             #[allow(dead_code)]
-            pub fn units() -> &'static [&'static str] {
-                &Self::UNITS
+            pub fn units() -> impl Iterator<Item = &'static str> {
+                Self::unit_rates().map(|(unit, _)| unit).cloned()
+            }
+
+            pub fn unit_rates() -> impl Iterator<Item = &'static (&'static str, u64)> {
+                Self::UNIT_RATES.iter().filter(|(unit, _)| *unit != $base).chain(::core::iter::once(&($base, 1)))
             }
 
             pub fn base<T: Into<$crate::Unit>>(unit: T) -> Result<Self, $crate::Error> {
                 let base = unit.into();
-                let mut units = Vec::with_capacity(Self::N);
-                for (&test, rate) in Self::UNITS.iter().zip(&Self::RATES) {
-                    units.push(($crate::Unit::new(test), *rate));
+                let mut units = Vec::with_capacity(Self::UNIT_RATES.len());
+                for &(test, rate) in Self::unit_rates() {
+                    units.push(($crate::Unit::new(test), rate));
                     if test == base.key {
                         units.iter_mut().for_each(|(_, origin)| *origin /= rate);
                         units.shrink_to_fit();
-                        return Ok(Self { units });
+                        return Ok(Self { table: $crate::Table::new(base, units) });
                     }
                 }
                 Err($crate::Error::NotFound(base))
@@ -164,29 +179,19 @@ macro_rules! define_exchanger {
             type Err = $crate::Error;
 
             fn rate(&self, unit: &$crate::Unit) -> Result<Self::Rate, Self::Err> {
-                for (test, rate) in self.units.iter() {
-                    if test == unit {
-                        return Ok(*rate);
-                    }
-                }
-                Err($crate::Error::NotFound(unit.clone()))
+                self.table.rate(unit)
             }
 
             #[inline]
             #[cold]
             fn units(&self) -> &[($crate::Unit, Self::Rate)] {
-                &self.units
+                self.table.units()
             }
 
             #[inline]
             #[cold]
             fn base_unit(&self) -> &$crate::Unit {
-                if let Some((unit, _)) = self.units.iter().find(|(_, rate)| *rate == 1) {
-                    return unit;
-                }
-                else {
-                    todo!()
-                }
+                self.table.base_unit()
             }
         }
     };
@@ -194,7 +199,10 @@ macro_rules! define_exchanger {
 
 #[cfg(test)]
 mod tests {
-    use crate::{Amount, Error, Exchanger, ExchangerExt, Unit};
+    use crate::{
+        test::{g, kg},
+        Amount, Error, Exchanger, ExchangerExt, Unit,
+    };
     use std::assert_matches::assert_matches;
 
     define_exchanger!(
@@ -210,7 +218,10 @@ mod tests {
 
     #[test]
     fn define_exchanger_using_macros() {
-        assert_eq!(Weight::units(), ["T", "KG", "JIN", "G", "MG"]);
+        assert_eq!(
+            Weight::units().collect::<Vec<_>>(),
+            ["T", "KG", "JIN", "G", "MG"]
+        );
 
         let weight = Weight::default();
         {
@@ -263,6 +274,21 @@ mod tests {
     fn weight_with_invalid_base_unit() {
         let result = Weight::base("bag");
         assert_matches!(result, Err(Error::NotFound(unit)) if unit.key == "bag");
+    }
+
+    #[test]
+    fn define_exchanger_with_base_unit_rate() {
+        define_exchanger! {
+            #[base_unit = "g"]
+            Weight {
+                kg = 1_000,
+                g = 1
+            }
+        }
+        let weight = Weight::default();
+
+        assert_eq!(weight.units().to_vec(), [(kg(), 1_000), (g(), 1)]);
+        assert_eq!(Weight::units().collect::<Vec<_>>(), ["kg", "g"]);
     }
 
     mod visibility {

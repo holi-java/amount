@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn StdError>> {
         println!();
         println!("Exchange");
         println!("====================");
-        println!("amount = {amount}");
+        println!("origin amount = {amount}");
         println!("base amount = {}", ext.reduce(&amount)?);
         println!("human readable amount = {}", ext.split(&amount)?);
         println!();

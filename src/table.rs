@@ -1,5 +1,6 @@
 use crate::{traits::Error, Exchanger, Number, Unit, UnitRate};
 
+#[derive(Debug, Clone)]
 pub struct Table {
     units: Vec<UnitRate<Number>>,
     base_unit: Unit,
@@ -11,16 +12,27 @@ impl Table {
         I: IntoIterator<Item = UnitRate<R>>,
         Number: From<R>,
     {
-        let mut units = units
-            .into_iter()
-            .map(|(unit, rate)| (unit, rate.into()))
-            .collect::<Vec<(Unit, Number)>>();
+        let base_unit = base_unit.into();
+        let iter = units.into_iter();
+        let mut units: Vec<UnitRate<Number>> = iter
+            .size_hint()
+            .1
+            .map(Vec::with_capacity)
+            .unwrap_or_default();
+        let mut has_base_unit = false;
+        for (unit, rate) in iter {
+            if !has_base_unit && unit.key == base_unit.key {
+                has_base_unit = true;
+            }
+            units.push((unit, rate.into()));
+        }
         units.sort_by(|(_, a), (_, b)| a.cmp(b).reverse());
 
-        Table {
-            base_unit: base_unit.into(),
-            units,
+        if !has_base_unit {
+            units.push((base_unit.clone(), 1));
         }
+
+        Table { base_unit, units }
     }
 }
 
@@ -152,5 +164,32 @@ mod tests {
             ext.reduce(Amount::new(1, Unit::new("box"))).unwrap(),
             Amount::new(4_000, Unit::new("jin"))
         );
+    }
+
+    use super::Table;
+    #[test]
+    fn new_table_unit_rates_contains_base_unit() {
+        let table = Table::new("g", [(Unit::new("kg"), 1000_u64), (Unit::new("g"), 1)]);
+
+        assert_eq!(
+            table
+                .units()
+                .iter()
+                .map(|(unit, _)| unit.key.clone())
+                .collect::<Vec<_>>(),
+            ["kg", "g"]
+        );
+        assert_eq!(table.base_unit().key, "g");
+    }
+
+    #[test]
+    fn add_base_unit_when_new_table_unit_rates_does_not_contains_base_unit() {
+        let table = Table::new("g", [(Unit::new("kg"), 1000_u64)]);
+
+        assert_eq!(
+            table.units().to_vec(),
+            [(Unit::new("kg"), 1_000), (Unit::new("g"), 1),]
+        );
+        assert_eq!(table.base_unit().key, "g");
     }
 }

@@ -17,7 +17,7 @@ fn exchanger_without_base_unit() {
     let cloned = weight.clone();
     assert_eq!(weight.units(), cloned.units());
 
-    assert_eq!(Weight::units(), ["kg", "g"]);
+    assert_eq!(Weight::units().collect::<Vec<_>>(), ["kg", "g"]);
     assert_eq!(weight.units(), [(kg(), 1)]);
     assert_eq!(*weight.base_unit(), kg());
 
