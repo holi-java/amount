@@ -45,12 +45,17 @@ impl<E: Exchanger> Reduce<E> for Split {
 
     fn reduce(&self, exchanger: E) -> Result<Self::Output, E::Err> {
         let mut pieces = self.pieces.iter().rev();
-        let mut result = pieces.next().unwrap().reduce(&exchanger)?;
-        for rest in pieces {
-            let rest = rest.reduce(&exchanger)?;
-            result = crate::sum2(result.amount, rest.amount, result.unit);
+        if let Some(first) = pieces.next() {
+            let mut result = first.reduce(&exchanger)?;
+            for rest in pieces {
+                let rest = rest.reduce(&exchanger)?;
+                result = crate::sum2(result.amount, rest.amount, result.unit);
+            }
+            return Ok(result);
         }
-        Ok(result)
+        let zero = Amount::new(0, exchanger.base_unit().clone());
+        #[allow(clippy::needless_return)]
+        return Ok(zero);
     }
 }
 

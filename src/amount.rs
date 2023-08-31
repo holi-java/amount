@@ -66,10 +66,7 @@ impl_mulop!(
     }
 );
 
-impl<E: Exchanger> Reduce<E> for Amount
-where
-    E::Rate: Clone,
-{
+impl<E: Exchanger> Reduce<E> for Amount {
     type Output = Amount;
 
     fn reduce(&self, exchanger: E) -> Result<Self::Output, E::Err> {

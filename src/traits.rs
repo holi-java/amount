@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::{table::Table, split::Split, Amount, Number, Unit};
+use crate::{split::Split, table::Table, Amount, Number, Unit};
 
 pub(crate) type UnitRate<T> = (Unit, T);
 
@@ -95,10 +95,12 @@ impl From<String> for Error {
 
 #[cfg(test)]
 mod tests {
+    use std::ops::Add;
+
     use super::{Exchanger, ExchangerExt};
     use crate::{
-        test::{bag, kg, CustomWeight},
-        Weight,
+        test::{bag, g, kg, CustomWeight},
+        Amount, Weight,
     };
 
     #[test]
@@ -107,5 +109,20 @@ mod tests {
 
         assert_eq!(ext.rate(&kg()).unwrap(), 1_000);
         assert_eq!(ext.rate(&bag()).unwrap(), 45_000);
+    }
+
+    #[test]
+    fn add_empty_split() {
+        let ext = Weight::default().extend(CustomWeight::default()).unwrap();
+        let empty = ext.split(Amount::new(0, kg())).unwrap();
+
+        assert_eq!(empty.iter().cloned().collect::<Vec<_>>(), []);
+
+        let sum = empty.add(Amount::new(1_100, g()));
+        let split = ext.split(sum).unwrap();
+        assert_eq!(
+            split.iter().cloned().collect::<Vec<_>>(),
+            [Amount::new(1, kg()), Amount::new(100, g())]
+        );
     }
 }
