@@ -203,7 +203,6 @@ mod tests {
         test::{g, kg},
         Amount, Error, Exchanger, ExchangerExt, Unit,
     };
-    use std::assert_matches::assert_matches;
 
     define_exchanger!(
         #[base_unit="MG"]
@@ -215,6 +214,15 @@ mod tests {
             G = 1_000
         }
     );
+
+    macro_rules! assert_matches {
+        ($expr:expr, $pattern: pat_param $(if $guard: expr)? $(,)?) => {
+            match $expr {
+                $pattern $(if $guard)? => (),
+                ref left => panic!("match {:?} againest {:} failed.", left, stringify!($pattern $(if $guard)?))
+            }
+        };
+    }
 
     #[test]
     fn define_exchanger_using_macros() {

@@ -1,8 +1,4 @@
 #![doc(html_playground_url = "https://play.rust-lang.org/")]
-#![cfg_attr(test, feature(assert_matches))]
-#![feature(try_trait_v2)]
-#![feature(associated_type_defaults)]
-#![feature(decl_macro)]
 //!
 //!
 //! # Example
